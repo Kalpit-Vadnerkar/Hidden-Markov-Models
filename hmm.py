@@ -8,6 +8,15 @@
 # Authors: Pei Xu (peix@g.clemson.edu) and Ioannis Karamouzas (ioannis@g.clemson.edu)
 #
 
+'''
+Project 4 - Hidden Markov Models and Particle filtering
+    Team Members:
+        1. Kalpit Vadnerkar
+        2. Dhananjay Nikum
+'''
+
+
+
 """
 In this assignment, your task is to implement a localization system to track the 
 location of a tiger-agent based on noisy sensor readings. To do so, you will 
@@ -88,7 +97,10 @@ def normal_pdf(mean, sigma, value):
     """Calculates the probability density function of 1D Gaussian with given mean 
     and standard deviation, evaluated at value. 
     """
-    return math.exp(- ((value - mean)/sigma)**2 * 0.5) /((2*math.pi)**0.5 * sigma) 
+    return math.exp(- ((value - mean)/sigma)**2 * 0.5) /((2*math.pi)**0.5 * sigma)
+
+def distance(x,y):
+    return math.sqrt(sum([(a-b)**2 for a,b in zip(x,y)]))
 
 
 class ExactInference(Inference):
@@ -102,6 +114,7 @@ class ExactInference(Inference):
         # assuming that the agent is located at each cell with equal probability.
         p = 1. / (self.n_cols*self.n_rows)
         self.belief = [[p]*self.n_cols for _ in range(self.n_rows)]
+        
 
 
     def observe(self,
@@ -130,6 +143,14 @@ class ExactInference(Inference):
         landmarks: a list of the (x, y) coordinate  of each landmark.
         """
         # Please finish the code below
+        #  p(e_t|x_tS) = PETgivenXT
+        for i in range(self.n_rows):
+            for j in range(self.n_cols):
+                PETgivenXT = 1
+                for k in range(len(landmarks)):
+                    PETgivenXT = PETgivenXT * normal_pdf(distance(landmarks[k], self.get_coordinate(i,j)), App.SENSOR_NOISE, observed_distances[k])
+                self.belief[i][j] = self.belief[i][j] * PETgivenXT
+        self.belief = self.normalize(self.belief)
         pass
 
 
@@ -145,7 +166,22 @@ class ExactInference(Inference):
 		  - Don't forget to normalize the belief after you update its probabilities by calling 
 		    self.belief = self.normalize(self.belief)!
         """
-        # Please finish the code below 
+        # Please finish the code below
+        # p(x_{t+1}|e_{1:t}) = PXT1givenE1T
+        B = []
+        for i in range(self.n_rows):
+            B.append([0]*self.n_cols)
+        for i in range(self.n_rows):
+            for j in range(self.n_cols):
+                PXT1givenE1T = 0
+                B.append((i,j))
+                for k in self.transition_model(i,j):
+                    PXT1givenE1T = PXT1givenE1T + (k[0] * self.belief[k[1][0]][k[1][1]])
+                B[i][j] = PXT1givenE1T
+        for i in range(self.n_rows):
+            for j in range(self.n_cols):
+                self.belief[i][j] = B[i][j] 
+        self.belief = self.normalize(self.belief)
         pass
 
 
