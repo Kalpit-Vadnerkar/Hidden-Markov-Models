@@ -240,6 +240,14 @@ class ParticleFilter(Inference):
         landmarks: a list of the coordinate (x, y) of each landmark.
         """
         # Please finish the code below
+        B = []
+        for p in self.particles:
+            PETgivenXI = 1
+            for k in range(len(landmarks)):
+                PETgivenXI = PETgivenXI * normal_pdf(distance(landmarks[k], self.get_coordinate(p[0],p[1])), App.SENSOR_NOISE, observed_distances[k])
+            B.append(PETgivenXI)
+        self.particles = random.choices(self.particles, weights = B, k = self.NUM_PARTICLES)
+        self.updateBelief()
         pass
 
 
@@ -260,6 +268,17 @@ class ParticleFilter(Inference):
             probability that can be obtained by the function self.transition_model(r,c).
         """
         # Please finish the code below
+        counter = 0
+        for p in self.particles:
+            probabilities =[]
+            new_states = []
+            for k in self.transition_model(p[0],p[1]):
+                probabilities.append(k[0])
+                new_states.append(k[1])
+            state = random.choices(new_states, weights = probabilities, k = 1)
+            self.particles[counter] = state[0]
+            counter += 1
+        self.updateBelief()
         pass
 
 
